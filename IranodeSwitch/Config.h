@@ -104,8 +104,8 @@ static const uint8_t COLOR_RGB_BITS[COLOR_COUNT] = {
 };
 
 // Applied on first boot / invalid EEPROM: green while on, red while off.
-#define DEFAULT_COLOR_ON  COLOR_GREEN
-#define DEFAULT_COLOR_OFF COLOR_RED
+#define DEFAULT_COLOR_ON  COLOR_BLUE
+#define DEFAULT_COLOR_OFF COLOR_WHITE
 
 // ============================================================================
 // TIMING - local/physical behavior
