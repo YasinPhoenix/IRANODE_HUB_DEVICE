@@ -24,10 +24,12 @@ private:
     void handleDeviceDetail();
     void handlePostRelay();
     void handlePostColor();
+    void handlePostName();
+    void handlePostChannelName();
 
     // Appends this device's type-specific object (e.g. "switch":{...}) to
-    // json. A future device type adds its own branch here - nothing else
-    // in this file changes.
+    // json, plus the universal name fields. A future device type adds its
+    // own branch here - nothing else in this file changes.
     void appendRecordJson(String &json, const DeviceRecord &record);
     void appendDeviceJson(String &json, const KnownDevice &device, bool includeDetail);
 

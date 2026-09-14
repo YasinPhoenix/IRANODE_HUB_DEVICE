@@ -106,7 +106,7 @@ void CommsManager::handleStateReport(const IranodePacket &packet, IPAddress remo
 
     if (packet.deviceType == DEVICE_TYPE_WALL_SWITCH && packet.payloadLength >= 2) {
         uint8_t index = packet.channel - 1;
-        if (index < MAX_SWITCH_CHANNELS) {
+        if (index < MAX_CHANNELS) {
             WallSwitchTypeData *sw = reinterpret_cast<WallSwitchTypeData *>(record.typeData);
             if (packet.value) sw->relayStates |= (1 << index);
             else              sw->relayStates &= ~(1 << index);

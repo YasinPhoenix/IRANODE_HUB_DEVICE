@@ -5,12 +5,22 @@
 #include "Config.h"
 #include "Protocol.h" // IranodeDeviceType
 
-#define MAX_SWITCH_CHANNELS 4
+// Renamed from MAX_SWITCH_CHANNELS: now sizes both WallSwitchTypeData's
+// arrays AND DeviceRecord's channelNames array, so it's no longer purely a
+// wall-switch concern - any device type with per-channel data uses this
+// same cap.
+#define MAX_CHANNELS          4
+#define MAX_DEVICE_NAME_LEN   24
+#define MAX_CHANNEL_NAME_LEN  16
 
 // On-flash (and, briefly, in-RAM while debounced) record for one device.
 // Envelope fields are universal; typeData's meaning depends on deviceType -
 // the same envelope + type-scoped-payload pattern as IranodePacket itself,
 // so DeviceStore never needs to know what any particular device type is.
+// name/channelNames are envelope fields too, not type-specific - naming is
+// a hub-only, display-only concept that every device type can use exactly
+// the same way, and it never gets sent to a device over the wire.
+//
 // Packed explicitly - deviceId's 4-byte alignment would otherwise let the
 // compiler insert trailing padding, which would silently break the "sum
 // every byte except the checksum" checksum convention used here and in
@@ -22,6 +32,8 @@ struct DeviceRecord {
     uint8_t  channelCount;
     uint8_t  fwMajor;
     uint8_t  fwMinor;
+    char     name[MAX_DEVICE_NAME_LEN];                      // "" = unset, UI falls back to the hex id
+    char     channelNames[MAX_CHANNELS][MAX_CHANNEL_NAME_LEN]; // "" = unset, UI falls back to "Channel N"
     uint8_t  typeData[16];
     uint8_t  checksum;
 };
@@ -31,8 +43,8 @@ struct DeviceRecord {
 // DeviceStore.cpp needs to change when that happens.
 struct WallSwitchTypeData {
     uint8_t relayStates; // bit i = channel i's relay state
-    uint8_t colorOn[MAX_SWITCH_CHANNELS];
-    uint8_t colorOff[MAX_SWITCH_CHANNELS];
+    uint8_t colorOn[MAX_CHANNELS];
+    uint8_t colorOff[MAX_CHANNELS];
 };
 #pragma pack(pop)
 
@@ -51,7 +63,7 @@ public:
     // freshly zeroed record for a device that's never been recorded
     // before. Callers mutate only the fields they know about and pass the
     // result to markDirty() - this is what keeps DeviceStore itself free
-    // of any per-device-type knowledge.
+    // of any per-device-type (or per-feature) knowledge.
     DeviceRecord fetchForUpdate(uint32_t deviceId, uint8_t deviceType);
 
     // Registers `record` as this device's latest pending write and
