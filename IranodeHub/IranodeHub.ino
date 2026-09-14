@@ -19,7 +19,7 @@ void setup() {
     hubIp.fromString(HUB_IP_STR);
     subnet.fromString(SUBNET_STR);
     WiFi.softAPConfig(hubIp, hubIp, subnet);
-    WiFi.softAP(AP_SSID, AP_PASSWORD);
+    WiFi.softAP(AP_SSID, AP_PASSWORD, 1, false, 10);
 
     // 2. Bring up storage and seed the known-device list from filenames
     //    only - no file content is read at boot (see DeviceStore). Every

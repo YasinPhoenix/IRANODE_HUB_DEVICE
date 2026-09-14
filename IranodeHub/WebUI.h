@@ -188,7 +188,7 @@ async function loadDevices() {
   } catch (e) { console.log(e); }
 }
 
-setInterval(loadDevices, 1500);
+setInterval(loadDevices, 300);
 loadDevices();
 </script>
 </body>

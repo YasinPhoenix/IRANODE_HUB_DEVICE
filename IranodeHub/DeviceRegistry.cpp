@@ -69,16 +69,16 @@ uint8_t DeviceRegistry::sortedIndices(uint8_t *outIndices, uint8_t maxCount) con
         if (_devices[i].used) outIndices[n++] = i;
     }
 
-    // Plain insertion sort - n is a home hub's device count, never large
-    // enough to need anything fancier.
-    for (uint8_t i = 1; i < n; i++) {
-        uint8_t key = outIndices[i];
-        int j = i - 1;
-        while (j >= 0 && isBefore(_devices[key], _devices[outIndices[j]])) {
-            outIndices[j + 1] = outIndices[j];
-            j--;
-        }
-        outIndices[j + 1] = key;
-    }
+    // // Plain insertion sort - n is a home hub's device count, never large
+    // // enough to need anything fancier.
+    // for (uint8_t i = 1; i < n; i++) {
+    //     uint8_t key = outIndices[i];
+    //     int j = i - 1;
+    //     while (j >= 0 && isBefore(_devices[key], _devices[outIndices[j]])) {
+    //         outIndices[j + 1] = outIndices[j];
+    //         j--;
+    //     }
+    //     outIndices[j + 1] = key;
+    // }
     return n;
 }
