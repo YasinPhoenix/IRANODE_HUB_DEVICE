@@ -28,8 +28,8 @@ body{
 }
 .logo-area{
   height:22vh;
-  min-height:130px;
-  max-height:220px;
+  min-height:80px;
+  max-height:80px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -38,7 +38,7 @@ body{
 }
 .iranode-logo{
   display:block;
-  width:min(78vw,360px);
+  width:min(78vw,180px);
   height:auto;
   flex:0 0 auto;
 }
@@ -453,7 +453,7 @@ function renderPanel() {
   panelEl.appendChild(grid);
 }
 
-setInterval(loadDevices, 1500);
+setInterval(loadDevices, 300);
 loadDevices();
 </script>
 </body>
