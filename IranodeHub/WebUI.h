@@ -7,114 +7,185 @@
 // PROGMEM blob safely header-only in Arduino.
 static const char INDEX_HTML[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
-<html>
+<html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Iranode Hub</title>
 <style>
 :root{
-  color-scheme:dark;
-  --bg:#0d1117; --surface:#161b22; --surface-hover:#1c2229; --border:#262c35;
-  --text:#e6edf3; --text-muted:#8b949e; --text-faint:#5b6472;
-  --accent:#3b82f6;
-  --online:#3fb950; --online-soft:rgba(63,185,80,.15);
-  --offline:#8b949e; --offline-soft:rgba(139,148,158,.12);
-  --radius:14px; --radius-sm:8px;
+  --bg:#101113;--surface:#17181b;--surface-2:#1e2024;--border:#2a2c30;
+  --text:#e8e9ea;--muted:#86898f;
+  --tab-bg:#1c1e22;--tab-active-bg:#34383e;--tab-active-text:#f4f4f5;
+  --offline-dot:#8a5a3d;--online-dot:#4a8a63;
+  --radius-lg:18px;--radius-md:13px;--radius-sm:8px;
 }
-*{box-sizing:border-box;}
+*{box-sizing:border-box}
 body{
-  margin:0; background:var(--bg); color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  -webkit-font-smoothing:antialiased;
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,sans-serif;
+  padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0);
 }
-.page{max-width:1000px; margin:0 auto; padding:28px 20px 60px;}
-header.top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:18px; flex-wrap:wrap; gap:8px;}
-header.top h1{font-size:1.4rem; font-weight:600; margin:0; letter-spacing:-0.01em;}
-header.top .summary{color:var(--text-muted); font-size:0.9rem;}
+.logo-area{
+  height:22vh;min-height:130px;max-height:220px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface);border-bottom:1px solid var(--border);
+}
+.logo-mark{width:64px;height:64px;}
 
-#connIssue{display:none; background:#3d1f1f; color:#f2a4a4; border-radius:var(--radius-sm); padding:9px 14px; font-size:0.85rem; margin-bottom:16px;}
+.conn-issue{
+  display:none;background:#3d1f1f;color:#f2a4a4;
+  border-radius:var(--radius-sm);padding:9px 14px;font-size:.82rem;
+  margin:12px 16px 0;
+}
 
-.grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:14px;}
-p.empty{grid-column:1/-1; color:var(--text-muted);}
+.tabs-row{display:flex;align-items:center;gap:8px;padding-inline:16px;border-bottom:1px solid var(--border)}
+.tabs{
+  flex:1;min-width:0;display:flex;gap:8px;overflow-x:auto;padding-block:14px;
+  scrollbar-width:none;-ms-overflow-style:none;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex:0 0 auto;padding:9px 16px;border-radius:999px;border:none;font-family:inherit;
+  background:var(--tab-bg);color:var(--muted);font-size:.85rem;font-weight:600;
+  white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:7px;
+  transition:background .15s ease,color .15s ease;
+}
+.tab.active{background:var(--tab-active-bg);color:var(--tab-active-text)}
+.tab .dot{width:6px;height:6px;border-radius:50%;flex:0 0 auto}
+.tab .dot.online{background:var(--online-dot)}
+.tab .dot.offline{background:var(--offline-dot)}
 
-.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px;}
-.card.collapsed{cursor:pointer; transition:background .15s;}
-.card.collapsed:hover{background:var(--surface-hover);}
-
-.card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
-.card-title{display:flex; flex-direction:column; gap:2px; min-width:0; flex:1;}
-.card-name{font-weight:600; font-size:1.02rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.card-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:0.72rem; color:var(--text-faint);}
-
-.card-actions{display:flex; align-items:center; gap:8px; flex-shrink:0;}
-.status-pill{display:flex; align-items:center; gap:5px; font-size:0.75rem; padding:3px 9px 3px 7px; border-radius:20px; white-space:nowrap;}
-.status-pill.online{background:var(--online-soft); color:var(--online);}
-.status-pill.offline{background:var(--offline-soft); color:var(--offline);}
-.status-dot{width:6px; height:6px; border-radius:50%; background:currentColor;}
-
-.icon-btn{background:none; border:none; color:var(--text-muted); cursor:pointer; padding:5px; border-radius:7px; display:flex;}
-.icon-btn:hover{background:var(--border); color:var(--text);}
-.icon-btn svg{width:16px; height:16px;}
-
+.panel{padding:18px 16px 40px;max-width:480px;margin-inline:auto}
+.panel-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.panel-header h2{font-size:1.05rem;margin:0;font-weight:800}
+.header-left{display:flex;align-items:center;gap:8px}
+.icon-btn{
+  width:34px;height:34px;border-radius:10px;border:1px solid var(--border);
+  background:linear-gradient(160deg,#24262b,#191b1f);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--muted);flex:0 0 auto;
+  box-shadow:0 3px 7px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.05);
+  transition:background .15s ease,box-shadow .15s ease,color .15s ease;
+}
+.icon-btn:active{box-shadow:inset 0 2px 5px rgba(0,0,0,.6)}
+.icon-btn.active{
+  background:linear-gradient(160deg,#3d424a,#2b2f35);color:var(--text);
+  border-color:var(--tab-active-bg);
+  box-shadow:0 3px 8px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08);
+}
+.icon-btn svg{width:18px;height:18px;display:block}
+.status-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--surface-2);border:1px solid var(--border);
+  border-radius:999px;padding:6px 12px;font-size:.76rem;color:var(--muted);font-weight:600;
+}
+.status-badge .dot{width:6px;height:6px;border-radius:50%}
+.status-badge.online .dot{background:var(--online-dot)}
+.status-badge.offline .dot{background:var(--offline-dot)}
 .name-input{
-  background:var(--bg); border:1px solid var(--border); color:var(--text);
-  border-radius:var(--radius-sm); padding:6px 9px; font-size:0.9rem; width:100%; font-family:inherit;
+  font-size:1.05rem;font-weight:800;color:var(--text);background:var(--surface-2);
+  border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;
+  width:100%;max-width:220px;font-family:inherit;
 }
-.name-input:focus{outline:none; border-color:var(--accent);}
-.edit-row{margin:8px 0 4px;}
-.edit-label{font-size:0.7rem; color:var(--text-faint); margin-bottom:4px; text-transform:uppercase; letter-spacing:.04em;}
+.name-input:focus{outline:none;border-color:var(--muted)}
 
-.channels{margin-top:6px;}
-.channel-block{border-top:1px solid var(--border); padding:10px 0;}
-.channel-block:first-child{border-top:none; padding-top:12px;}
-.channel-row{display:flex; align-items:center; justify-content:space-between; gap:10px;}
-.channel-left{display:flex; align-items:center; gap:9px; min-width:0;}
-.color-dot{width:11px; height:11px; border-radius:50%; flex-shrink:0; box-shadow:0 0 0 2px rgba(255,255,255,.06);}
-.channel-label{font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.info-note{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
+  padding:12px 14px;color:var(--muted);font-size:.82rem;margin-bottom:16px;line-height:1.6;
+}
 
-.switch{position:relative; display:inline-block; width:40px; height:24px; flex-shrink:0;}
-.switch input{opacity:0; width:0; height:0;}
-.slider{position:absolute; inset:0; background:#30363d; border-radius:24px; cursor:pointer; transition:.15s;}
-.slider::before{content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.15s;}
-.switch input:checked + .slider{background:var(--online);}
-.switch input:checked + .slider::before{transform:translateX(16px);}
-.switch input:disabled + .slider{opacity:.35; cursor:default;}
+.channel-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,100px);gap:12px;
+  justify-content:center;padding:2px 0 6px;
+}
+.channel-btn{
+  position:relative;width:100px;height:100px;border:none;border-radius:var(--radius-lg);
+  cursor:pointer;padding:0;transition:opacity .12s ease;
+}
+.channel-btn:active{opacity:.82}
+.channel-btn[disabled]{cursor:default;opacity:.45}
+.channel-btn .btn-inner{
+  position:absolute;inset:12px;border-radius:12px;background:rgba(0,0,0,.24);
+  box-shadow:0 2px 8px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  color:#f5f5f6;
+}
+.channel-btn .cname{font-size:.8rem;font-weight:700;line-height:1.25;word-break:break-word;padding:0 4px}
+.channel-btn .cstate{font-size:.58rem;opacity:.78;letter-spacing:.02em}
 
-.color-block{margin-top:8px;}
-.color-block.locked{opacity:.4; pointer-events:none;}
-.swatch-row{display:flex; gap:8px; flex-wrap:wrap;}
-.swatch-btn{width:26px; height:26px; border-radius:50%; border:2px solid transparent; cursor:pointer; padding:0; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
-.swatch-btn.selected{border-color:var(--text); transform:scale(1.12);}
+.ch-0{background:#2b2b2b}
+.ch-1{background:#e74c3c}
+.ch-2{background:#2ecc71}
+.ch-3{background:#3498db}
+.ch-4{background:#f1c40f}
+.ch-5{background:#1abc9c}
+.ch-6{background:#9b59b6}
+.ch-7{background:#ffffff}
+
+.channel-block{border-top:1px solid var(--border);padding:14px 0}
+.channel-block:first-child{border-top:none;padding-top:0}
+.chan-name-input{
+  width:100%;font-size:.88rem;font-weight:700;color:var(--text);background:var(--surface-2);
+  border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;
+  margin-bottom:12px;font-family:inherit;
+}
+.chan-name-input:focus{outline:none;border-color:var(--muted)}
+.colorblock{margin-top:10px}
+.colorblock .label{font-size:.7rem;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.swatch{
+  width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 2px 6px rgba(0,0,0,.5);
+  transition:transform .1s ease,border-color .1s ease,box-shadow .1s ease;
+}
+.swatch.selected{
+  border-color:var(--text);transform:scale(1.12);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 3px 7px rgba(0,0,0,.55);
+}
 </style>
 </head>
 <body>
-<div class="page">
-  <header class="top">
-    <h1>Iranode Hub</h1>
-    <span class="summary" id="summary"></span>
-  </header>
-  <div id="connIssue">Can't reach the hub right now - retrying…</div>
-  <div id="devices" class="grid">Loading…</div>
+
+<div class="logo-area">
+  <!-- bitmask logo goes here - left empty on purpose -->
+  <div class="logo-mark" id="logoMark"></div>
 </div>
+
+<div class="tabs-row">
+  <div class="tabs" id="tabs"></div>
+</div>
+<div class="conn-issue" id="connIssue">امکان دسترسی به هاب وجود ندارد - در حال تلاش مجدد…</div>
+<div class="panel" id="panel"></div>
+
 <script>
-const COLOR_NAMES = ['Off','Red','Green','Blue','Yellow','Cyan','Magenta','White'];
-const COLOR_HEX   = ['#30363d','#f85149','#3fb950','#58a6ff','#e3b341','#39c5cf','#db61a2','#f0f6fc'];
-
-const expandedOffline = new Map(); // deviceId -> cached detail, only while an offline card is expanded
-const editingIds = new Set();      // deviceId currently in edit mode
-
+// Index 0-7 lines up with the switch firmware's RGBColor enum
+// (COLOR_OFF..COLOR_WHITE in Config.h) - this array only supplies the
+// Persian display name, the swatch colors themselves come from the
+// .ch-0..ch-7 CSS classes above.
+const COLOR_NAMES = ["خاموش","قرمز","سبز","آبی","زرد","فیروزه‌ای","بنفش","سفید"];
 const ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
 const ICON_DONE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
-const ICON_CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
 
-function el(html) {
-  const t = document.createElement('template');
-  t.innerHTML = html.trim();
-  return t.content.firstElementChild;
+let devices = [];       // stable local order - only ever appended to, never re-sorted by a poll
+let activeId = null;
+let panelEditMode = false;
+
+const tabsEl = document.getElementById('tabs');
+const panelEl = document.getElementById('panel');
+const connIssueEl = document.getElementById('connIssue');
+
+function getDevice(id) {
+  return devices.find(d => d.id === id) || null;
 }
-function escapeHtml(s) {
-  return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function displayName(dev) {
+  return dev.name && dev.name.length ? dev.name : dev.id;
+}
+function formatAge(sec) {
+  if (sec < 60) return sec + ' ثانیه پیش';
+  if (sec < 3600) return Math.floor(sec / 60) + ' دقیقه پیش';
+  if (sec < 86400) return Math.floor(sec / 3600) + ' ساعت پیش';
+  return Math.floor(sec / 86400) + ' روز پیش';
 }
 function postForm(url, params) {
   return fetch(url, { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams(params) });
@@ -122,211 +193,248 @@ function postForm(url, params) {
 function submitOnEnter(input) {
   input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
 }
-function formatAge(sec) {
-  if (sec < 60) return sec + 's ago';
-  if (sec < 3600) return Math.floor(sec / 60) + 'm ago';
-  if (sec < 86400) return Math.floor(sec / 3600) + 'h ago';
-  return Math.floor(sec / 86400) + 'd ago';
-}
-function displayName(device) {
-  return device.name && device.name.length ? escapeHtml(device.name) : device.id;
-}
-function statusPill(device) {
-  return device.online
-    ? '<span class="status-pill online"><span class="status-dot"></span>Online</span>'
-    : '<span class="status-pill offline"><span class="status-dot"></span>Offline</span>';
-}
 
-function renderDeviceHead(device, editing) {
-  const title = editing
-    ? `<input class="name-input" data-role="device-name" value="${escapeHtml(device.name || '')}" placeholder="${device.id}">`
-    : `<span class="card-name">${displayName(device)}</span><span class="card-id">${device.id}</span>`;
-  return `<div class="card-head">
-    <div class="card-title">${title}</div>
-    <div class="card-actions">
-      ${statusPill(device)}
-      <button class="icon-btn" data-role="edit-toggle">${editing ? ICON_DONE : ICON_EDIT}</button>
-    </div>
-  </div>`;
-}
+/* ---------- polling + local device list ----------
+   /api/devices only inlines full detail (name + channels) for a device
+   that's currently online - an offline entry is just {id, online:false[,
+   lastSeenSec]}. mergeDevices() only ever copies keys a payload actually
+   carries, so a device's last-known name/channels stay put across polls
+   even after it drops offline or before we've ever fetched its detail;
+   ensureDetail() is what fills that in the first time a device is opened,
+   same "fetch only on demand" approach as the previous card-based UI.
+   Tab order is intentionally never touched here - a device keeps its
+   position for as long as the hub still reports it at all, regardless of
+   which devices go on/offline between polls. */
 
-function colorSwatches(selected) {
-  return COLOR_NAMES.map((name, c) =>
-    `<button class="swatch-btn ${c === selected ? 'selected' : ''}" title="${name}" style="background:${COLOR_HEX[c]}" data-color="${c}"></button>`
-  ).join('');
-}
-
-function renderSwitchBody(device, editing) {
-  const canControl = device.online;
-  let html = '<div class="channels">';
-
-  device.switch.channels.forEach((ch, i) => {
-    const swatchColor = COLOR_HEX[ch.relay ? ch.colorOn : ch.colorOff];
-    const label = ch.name && ch.name.length ? escapeHtml(ch.name) : ('Channel ' + (i + 1));
-
-    html += '<div class="channel-block">';
-    if (editing) {
-      html += `<div class="edit-row">
-        <div class="edit-label">Channel ${i + 1} name</div>
-        <input class="name-input" data-role="channel-name" data-ch="${i + 1}" value="${escapeHtml(ch.name || '')}" placeholder="Channel ${i + 1}">
-      </div>`;
+function mergeDevices(fresh) {
+  fresh.forEach(fd => {
+    const existing = getDevice(fd.id);
+    if (existing) {
+      Object.assign(existing, fd);
+    } else {
+      devices.push(fd);
+      if (activeId === null) activeId = fd.id;
     }
-    html += `<div class="channel-row">
-      <div class="channel-left"><span class="color-dot" style="background:${swatchColor}"></span><span class="channel-label">${label}</span></div>
-      <label class="switch"><input type="checkbox" data-action="relay" data-ch="${i + 1}" ${ch.relay ? 'checked' : ''} ${canControl ? '' : 'disabled'}><span class="slider"></span></label>
-    </div>`;
-    if (editing) {
-      html += `<div class="color-block ${canControl ? '' : 'locked'}">
-        <div class="edit-label">On-color</div>
-        <div class="swatch-row" data-ch="${i + 1}" data-slot="1">${colorSwatches(ch.colorOn)}</div>
-      </div>
-      <div class="color-block ${canControl ? '' : 'locked'}">
-        <div class="edit-label">Off-color</div>
-        <div class="swatch-row" data-ch="${i + 1}" data-slot="0">${colorSwatches(ch.colorOff)}</div>
-      </div>`;
-    }
-    html += '</div>';
   });
-
-  html += '</div>';
-  return html;
-}
-
-function bindCardEvents(card, device) {
-  card.querySelector('[data-role="edit-toggle"]').addEventListener('click', () => {
-    if (editingIds.has(device.id)) editingIds.delete(device.id);
-    else editingIds.add(device.id);
-    const fresh = renderCard(device);
-    fresh.dataset.id = device.id;
-    card.replaceWith(fresh);
-  });
-
-  card.querySelectorAll('input[data-action="relay"]').forEach(input => {
-    input.addEventListener('change', () => {
-      postForm('/api/device/relay', { id: device.id, channel: input.dataset.ch, value: input.checked ? 1 : 0 });
-    });
-  });
-
-  const nameInput = card.querySelector('[data-role="device-name"]');
-  if (nameInput) {
-    submitOnEnter(nameInput);
-    nameInput.addEventListener('blur', () => {
-      postForm('/api/device/name', { id: device.id, name: nameInput.value });
-      device.name = nameInput.value;
-    });
+  const freshIds = fresh.map(fd => fd.id);
+  devices = devices.filter(d => freshIds.includes(d.id));
+  if (activeId !== null && !getDevice(activeId)) {
+    activeId = devices.length ? devices[0].id : null;
   }
-
-  card.querySelectorAll('[data-role="channel-name"]').forEach(input => {
-    submitOnEnter(input);
-    input.addEventListener('blur', () => {
-      const idx = input.dataset.ch - 1;
-      postForm('/api/device/channel-name', { id: device.id, channel: input.dataset.ch, name: input.value });
-      device.switch.channels[idx].name = input.value;
-    });
-  });
-
-  card.querySelectorAll('.swatch-row').forEach(row => {
-    row.querySelectorAll('.swatch-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        postForm('/api/device/color', { id: device.id, channel: row.dataset.ch, slot: row.dataset.slot, color: btn.dataset.color });
-        row.querySelectorAll('.swatch-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-      });
-    });
-  });
 }
 
-function renderCollapsed(device) {
-  const age = device.lastSeenSec != null ? `Last seen ${formatAge(device.lastSeenSec)}` : '';
-  const card = el(`<div class="card collapsed">
-    <div class="card-head">
-      <div class="card-title"><span class="card-name">${device.id}</span><span class="card-id">${age}</span></div>
-      <div class="card-actions">
-        <span class="status-pill offline"><span class="status-dot"></span>Offline</span>
-        <span class="icon-btn">${ICON_CHEVRON}</span>
-      </div>
-    </div>
-  </div>`);
-  card.addEventListener('click', async () => {
-    try {
-      const res = await fetch('/api/device/detail?id=' + device.id);
-      const detail = await res.json();
-      if (!detail.found) return;
-      detail.online = false;
-      expandedOffline.set(device.id, detail);
-      const fresh = renderCard(detail);
-      fresh.dataset.id = device.id;
-      card.replaceWith(fresh);
-    } catch (e) { console.log(e); }
-  });
-  return card;
-}
-
-// Single dispatch point: builds a header always, and a type-specific body
-// only when we actually know the type (a device that's only ever sent a
-// bare heartbeat so far - a rare boot-order edge case - just shows a
-// header with no channels rather than guessing).
-function renderCard(device) {
-  if (!device.online && !expandedOffline.has(device.id)) return renderCollapsed(device);
-
-  const source = device.online ? device : expandedOffline.get(device.id);
-  const editing = editingIds.has(device.id);
-  const head = renderDeviceHead(source, editing);
-  const body = source.switch ? renderSwitchBody(source, editing) : '';
-  // Future device types add their own "else if (source.someType) body = renderSomeTypeBody(...)" here.
-
-  const card = el(`<div class="card">${head}${body}</div>`);
-  bindCardEvents(card, source);
-  return card;
-}
-
-function updateSummary(devices) {
-  const summary = document.getElementById('summary');
-  if (!devices.length) { summary.textContent = ''; return; }
-  summary.textContent = devices.filter(d => d.online).length + ' of ' + devices.length + ' online';
-}
-
-function renderList(devices) {
-  const container = document.getElementById('devices');
-  updateSummary(devices);
-
-  if (devices.length === 0) {
-    container.innerHTML = '<p class="empty">No devices yet - waiting for the first one to check in.</p>';
-    editingIds.clear();
-    expandedOffline.clear();
-    return;
-  }
-  if (container.querySelector('.empty')) container.innerHTML = '';
-
-  devices.forEach((device, i) => {
-    if (device.online) expandedOffline.delete(device.id); // it's live now, drop the stale cache
-
-    const existing = container.children[i];
-    // Don't rebuild a card the user is actively editing out from under them.
-    if (existing && existing.dataset.id === device.id && editingIds.has(device.id)) return;
-
-    const card = renderCard(device);
-    card.dataset.id = device.id;
-
-    if (existing && existing.dataset.id === device.id) existing.replaceWith(card);
-    else if (existing) container.insertBefore(card, existing);
-    else container.appendChild(card);
-  });
-
-  while (container.children.length > devices.length) {
-    container.removeChild(container.lastChild);
-  }
+async function ensureDetail(id) {
+  const dev = getDevice(id);
+  if (!dev || dev.switch !== undefined) return; // already known, online or previously fetched
+  try {
+    const res = await fetch('/api/device/detail?id=' + id);
+    const detail = await res.json();
+    if (!detail.found) return;
+    Object.assign(dev, detail);
+    if (activeId === id) renderPanel();
+  } catch (e) { /* stays on the id-only fallback; next poll or reselect retries */ }
 }
 
 async function loadDevices() {
   try {
     const res = await fetch('/api/devices');
-    const devices = await res.json();
-    document.getElementById('connIssue').style.display = 'none';
-    renderList(devices);
+    const fresh = await res.json();
+    connIssueEl.style.display = 'none';
+    mergeDevices(fresh);
+    renderTabs();
+    if (!panelEditMode) renderPanel(); // don't clobber an in-progress edit under the user's hands
+    if (activeId) ensureDetail(activeId);
   } catch (e) {
-    document.getElementById('connIssue').style.display = 'block';
+    connIssueEl.style.display = 'block';
   }
+}
+
+/* ---------- tabs ---------- */
+
+function renderTabs() {
+  tabsEl.innerHTML = '';
+  devices.forEach(d => {
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (d.id === activeId ? ' active' : '');
+    tab.dataset.id = d.id;
+    const dot = document.createElement('span');
+    dot.className = 'dot ' + (d.online ? 'online' : 'offline');
+    const label = document.createElement('span');
+    label.textContent = displayName(d);
+    tab.appendChild(dot);
+    tab.appendChild(label);
+    tab.addEventListener('click', () => {
+      activeId = d.id;
+      panelEditMode = false;
+      renderTabs();
+      renderPanel();
+      ensureDetail(d.id);
+    });
+    tabsEl.appendChild(tab);
+  });
+}
+
+/* ---------- device panel ---------- */
+
+function swatchRow(dev, chIndex, slot, current) {
+  const wrap = document.createElement('div');
+  wrap.className = 'swatches';
+  for (let c = 0; c < 8; c++) {
+    const sw = document.createElement('div');
+    sw.className = 'swatch ch-' + c + (c === current ? ' selected' : '');
+    sw.title = COLOR_NAMES[c];
+    sw.addEventListener('click', () => {
+      if (slot === 1) dev.switch.channels[chIndex].colorOn = c;
+      else dev.switch.channels[chIndex].colorOff = c;
+      wrap.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+      sw.classList.add('selected');
+      postForm('/api/device/color', { id: dev.id, channel: chIndex + 1, slot: slot, color: c });
+    });
+    wrap.appendChild(sw);
+  }
+  return wrap;
+}
+
+function renderPanel() {
+  panelEl.innerHTML = '';
+
+  if (!activeId) {
+    const note = document.createElement('div');
+    note.className = 'info-note';
+    note.textContent = devices.length === 0
+      ? 'هنوز دستگاهی یافت نشد - در انتظار اتصال اولین دستگاه…'
+      : 'در حال بارگذاری…';
+    panelEl.appendChild(note);
+    return;
+  }
+  const dev = getDevice(activeId);
+  if (!dev) return;
+
+  const header = document.createElement('div');
+  header.className = 'panel-header';
+
+  if (panelEditMode) {
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'name-input';
+    nameInput.value = dev.name || '';
+    nameInput.placeholder = dev.id;
+    submitOnEnter(nameInput);
+    nameInput.addEventListener('blur', () => {
+      dev.name = nameInput.value;
+      postForm('/api/device/name', { id: dev.id, name: nameInput.value });
+      renderTabs();
+    });
+    header.appendChild(nameInput);
+  } else {
+    const h2 = document.createElement('h2');
+    h2.textContent = displayName(dev);
+    header.appendChild(h2);
+  }
+
+  const headerLeft = document.createElement('div');
+  headerLeft.className = 'header-left';
+  const editBtn = document.createElement('button');
+  editBtn.className = 'icon-btn' + (panelEditMode ? ' active' : '');
+  editBtn.innerHTML = panelEditMode ? ICON_DONE : ICON_EDIT;
+  editBtn.title = 'ویرایش نام‌ها و رنگ‌ها';
+  editBtn.addEventListener('click', () => { panelEditMode = !panelEditMode; renderPanel(); });
+  headerLeft.appendChild(editBtn);
+
+  const badge = document.createElement('span');
+  badge.className = 'status-badge ' + (dev.online ? 'online' : 'offline');
+  const bdot = document.createElement('span');
+  bdot.className = 'dot';
+  badge.appendChild(bdot);
+  badge.appendChild(document.createTextNode(dev.online ? 'آنلاین' : 'آفلاین'));
+  headerLeft.appendChild(badge);
+
+  header.appendChild(headerLeft);
+  panelEl.appendChild(header);
+
+  if (!dev.online) {
+    const offNote = document.createElement('div');
+    offNote.className = 'info-note';
+    offNote.textContent = 'این دستگاه اکنون آفلاین است. آخرین وضعیت شناخته‌شده نمایش داده می‌شود و قابل تغییر نیست.'
+      + (dev.lastSeenSec != null ? (' (آخرین اتصال: ' + formatAge(dev.lastSeenSec) + ')') : '');
+    panelEl.appendChild(offNote);
+  }
+
+  if (dev.switch === undefined) {
+    const loading = document.createElement('div');
+    loading.className = 'info-note';
+    loading.textContent = 'در حال دریافت اطلاعات کانال‌ها…';
+    panelEl.appendChild(loading);
+    return;
+  }
+
+  if (panelEditMode) {
+    dev.switch.channels.forEach((ch, i) => {
+      const card = document.createElement('div');
+      card.className = 'channel-block';
+
+      const nameField = document.createElement('input');
+      nameField.type = 'text';
+      nameField.className = 'chan-name-input';
+      nameField.value = ch.name || '';
+      nameField.placeholder = 'کانال ' + (i + 1);
+      submitOnEnter(nameField);
+      nameField.addEventListener('blur', () => {
+        ch.name = nameField.value;
+        postForm('/api/device/channel-name', { id: dev.id, channel: i + 1, name: nameField.value });
+      });
+      card.appendChild(nameField);
+
+      const onBlock = document.createElement('div');
+      onBlock.className = 'colorblock';
+      const onLabel = document.createElement('div');
+      onLabel.className = 'label';
+      onLabel.textContent = 'رنگ هنگام روشن بودن';
+      onBlock.appendChild(onLabel);
+      onBlock.appendChild(swatchRow(dev, i, 1, ch.colorOn));
+      card.appendChild(onBlock);
+
+      const offBlock = document.createElement('div');
+      offBlock.className = 'colorblock';
+      const offLabel = document.createElement('div');
+      offLabel.className = 'label';
+      offLabel.textContent = 'رنگ هنگام خاموش بودن';
+      offBlock.appendChild(offLabel);
+      offBlock.appendChild(swatchRow(dev, i, 0, ch.colorOff));
+      card.appendChild(offBlock);
+
+      panelEl.appendChild(card);
+    });
+    return;
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'channel-grid';
+  dev.switch.channels.forEach((ch, i) => {
+    const color = ch.relay ? ch.colorOn : ch.colorOff;
+    const btn = document.createElement('button');
+    btn.className = 'channel-btn ch-' + color;
+    btn.disabled = !dev.online;
+    const inner = document.createElement('div');
+    inner.className = 'btn-inner';
+    const name = document.createElement('div');
+    name.className = 'cname';
+    name.textContent = ch.name && ch.name.length ? ch.name : ('کانال ' + (i + 1));
+    const state = document.createElement('div');
+    state.className = 'cstate';
+    state.textContent = ch.relay ? 'روشن' : 'خاموش';
+    inner.appendChild(name);
+    inner.appendChild(state);
+    btn.appendChild(inner);
+    btn.addEventListener('click', () => {
+      const next = !ch.relay;
+      ch.relay = next;
+      renderPanel();
+      postForm('/api/device/relay', { id: dev.id, channel: i + 1, value: next ? 1 : 0 });
+    });
+    grid.appendChild(btn);
+  });
+  panelEl.appendChild(grid);
 }
 
 setInterval(loadDevices, 1500);
