@@ -27,11 +27,21 @@ body{
   padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0);
 }
 .logo-area{
-  height:22vh;min-height:130px;max-height:220px;
-  display:flex;align-items:center;justify-content:center;
-  background:var(--surface);border-bottom:1px solid var(--border);
+  height:22vh;
+  min-height:130px;
+  max-height:220px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
 }
-.logo-mark{width:64px;height:64px;}
+.iranode-logo{
+  display:block;
+  width:min(78vw,360px);
+  height:auto;
+  flex:0 0 auto;
+}
 
 .conn-issue{
   display:none;background:#3d1f1f;color:#f2a4a4;
@@ -148,8 +158,14 @@ body{
 <body>
 
 <div class="logo-area">
-  <!-- bitmask logo goes here - left empty on purpose -->
-  <div class="logo-mark" id="logoMark"></div>
+  <svg class="iranode-logo"
+       viewBox="0 0 893 256"
+       xmlns="http://www.w3.org/2000/svg"
+       role="img"
+       aria-label="Iranode">
+    <path d="M 682 195 L 685 197 L 730 197 L 735 195 L 740 190 L 749 164 L 749 160 L 703 159 L 697 161 L 691 167 Z M 786 71 L 672 71 L 657 75 L 646 82 L 639 89 L 635 96 L 600 195 L 577 254 L 599 255 L 608 253 L 620 248 L 635 236 L 645 221 L 647 213 L 650 208 L 651 201 L 661 177 L 679 125 L 686 115 L 692 112 L 762 112 L 768 110 L 776 102 Z M 541 76 L 538 74 L 505 74 L 500 75 L 491 80 L 486 89 L 465 147 L 459 153 L 450 157 L 425 157 L 423 155 L 448 88 L 449 81 L 444 73 L 438 71 L 343 71 L 333 73 L 322 78 L 309 89 L 299 105 L 273 177 L 273 188 L 275 192 L 282 196 L 355 196 L 357 200 L 351 210 L 343 215 L 299 215 L 278 217 L 267 226 L 256 254 L 362 254 L 378 246 L 389 236 L 397 224 L 407 197 L 463 197 L 474 195 L 493 184 L 501 176 L 508 165 Z M 388 113 L 374 154 L 371 157 L 330 156 L 330 151 L 342 121 L 347 116 L 355 112 Z M 282 86 L 274 77 L 266 73 L 260 72 L 187 71 L 179 73 L 170 81 L 160 110 L 232 110 L 234 112 L 234 116 L 222 146 L 212 155 L 204 157 L 30 157 L 19 161 L 10 169 L 0 196 L 205 197 L 226 193 L 248 180 L 256 172 L 263 162 L 272 135 L 274 133 L 279 117 L 282 112 L 284 104 L 284 93 Z M 475 59 L 522 60 L 526 58 L 530 54 L 536 35 L 539 30 L 539 25 L 491 25 L 483 33 Z M 645 1 L 602 1 L 593 5 L 586 13 L 520 196 L 540 196 L 554 192 L 570 182 L 584 166 Z M 892 1 L 847 1 L 840 4 L 835 9 L 774 176 L 771 181 L 767 196 L 790 196 L 803 192 L 817 184 L 826 176 L 832 168 L 850 122 L 853 110 L 866 77 L 887 15 L 890 10 Z" 
+    fill="#ffffff" fill-rule="evenodd"/>
+  </svg>
 </div>
 
 <div class="tabs-row">
