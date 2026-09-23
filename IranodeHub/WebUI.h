@@ -106,8 +106,26 @@ body{
 }
 
 .channel-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,100px);gap:12px;
-  justify-content:center;padding:2px 0 6px;
+  --ch-gap:12px;
+  display:grid;grid-template-columns:repeat(auto-fit,100px);gap:var(--ch-gap);
+  /* space-evenly (not center): whatever width is left over after laying
+     out the fixed-size buttons gets split into equal gaps between AND
+     around them, so the edge-to-button gap always matches the
+     button-to-button gap - no per-variant spacing needed. auto-fit (vs
+     auto-fill) collapses any unused track to 0 width first, so this math
+     isn't thrown off by a phantom empty column. Top/bottom padding is
+     tied to the same --ch-gap so the space above the first row and below
+     the last row matches the row-gap too (relevant once a variant has
+     more than one row, e.g. the 4-switch 2x2 grid). */
+  justify-content:space-evenly;padding:var(--ch-gap) 0;
+  direction:ltr;
+}
+/* 4-switch devices: force a fixed 2x2 grid (ch1|ch2 / ch3|ch4) so the
+   layout always mirrors the physical unit instead of auto-fit deciding
+   how many columns fit (which produced an uneven 3-then-1 split). Spacing
+   still comes from justify-content:space-evenly above. */
+.channel-grid.ch-count-4{
+  grid-template-columns:repeat(2,100px);
 }
 .channel-btn{
   position:relative;width:100px;height:100px;border:none;border-radius:var(--radius-lg);
@@ -121,8 +139,8 @@ body{
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
   color:#f5f5f6;
 }
-.channel-btn .cname{font-size:.8rem;font-weight:700;line-height:1.25;word-break:break-word;padding:0 4px}
-.channel-btn .cstate{font-size:.58rem;opacity:.78;letter-spacing:.02em}
+.channel-btn .cname{font-size:.8rem;font-weight:700;line-height:1.25;word-break:break-word;padding:0 4px;direction:rtl}
+.channel-btn .cstate{font-size:.58rem;opacity:.78;letter-spacing:.02em;direction:rtl}
 
 .ch-0{background:#2b2b2b}
 .ch-1{background:#e74c3c}
@@ -425,7 +443,7 @@ function renderPanel() {
   }
 
   const grid = document.createElement('div');
-  grid.className = 'channel-grid';
+  grid.className = 'channel-grid ch-count-' + dev.switch.channels.length;
   dev.switch.channels.forEach((ch, i) => {
     const color = ch.relay ? ch.colorOn : ch.colorOff;
     const btn = document.createElement('button');
@@ -451,6 +469,20 @@ function renderPanel() {
     grid.appendChild(btn);
   });
   panelEl.appendChild(grid);
+
+  // justify-content:space-evenly gives the columns a gap based on
+  // leftover width, which changes with screen size - there's no
+  // equivalent leftover height for row-gap to grow into, so it stays
+  // stuck at --ch-gap. Once the grid has actually rendered, measure the
+  // real gap space-evenly produced between two buttons on the same row
+  // and apply that as the row-gap too, so rows (currently only the
+  // 4-switch's 2x2 grid) end up spaced the same as columns.
+  const first = grid.children[0];
+  const second = grid.children[1];
+  if (first && second) {
+    const hGap = second.getBoundingClientRect().left - first.getBoundingClientRect().right;
+    if (hGap > 0) grid.style.rowGap = hGap + 'px';
+  }
 }
 
 setInterval(loadDevices, 300);
