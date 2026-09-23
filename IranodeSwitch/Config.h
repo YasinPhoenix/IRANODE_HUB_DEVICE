@@ -143,6 +143,15 @@ static const uint8_t COLOR_RGB_BITS[COLOR_COUNT] = {
 #define HEARTBEAT_INTERVAL_MS      5000UL
 #define WIFI_RECONNECT_INTERVAL_MS 5000UL  // how often to retry joining the hub while disconnected
 
+// Gap between each channel's STATE_REPORT in the just-connected boot burst.
+// Sending SWITCH_COUNT+1 UDP packets back-to-back right as WiFi comes up
+// can outrun the radio/TCP-IP stack's TX queue before it's warmed up -
+// spacing them out (still non-blocking, spread across tick() calls) avoids
+// silently dropping one. 4-switch boards send 5 packets total in the
+// burst and are the ones that showed this; 1-3 switch boards send fewer
+// and were fine, which fits a queue-depth issue rather than a logic bug.
+#define BOOT_REPORT_SPACING_MS     20UL
+
 // What this project identifies itself as in Protocol.h's deviceType field.
 // A different device project (e.g. a future sensor) defines its own value
 // here - see IranodeDeviceType in Protocol.h.

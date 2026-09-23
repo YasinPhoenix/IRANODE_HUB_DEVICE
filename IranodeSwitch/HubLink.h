@@ -41,8 +41,15 @@ private:
     uint32_t _lastReconnectAttemptMs = 0;
     uint32_t _lastHeartbeatMs = 0;
 
+    // Boot-time state-report burst, spread across tick() calls instead of
+    // fired in one tight loop - see BOOT_REPORT_SPACING_MS in Config.h.
+    // _bootReportNext == SWITCH_COUNT means the burst is done/inactive.
+    uint8_t _bootReportNext = SWITCH_COUNT;
+    uint32_t _lastBootReportMs = 0;
+
     void connectWifi();
     void onConnected();
+    void tickBootReportBurst(uint32_t nowMs);
 
     void processIncoming();
     void handleSetState(const IranodePacket &packet);

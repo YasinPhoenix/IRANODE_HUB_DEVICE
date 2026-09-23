@@ -36,6 +36,7 @@ void HubLink::tick(uint32_t nowMs) {
     }
 
     processIncoming();
+    tickBootReportBurst(nowMs);
 
     if (nowMs - _lastHeartbeatMs >= HEARTBEAT_INTERVAL_MS) {
         _lastHeartbeatMs = nowMs;
@@ -51,10 +52,23 @@ void HubLink::onConnected() {
     // Don't wait for the hub's next periodic DISCOVERY_REQUEST broadcast
     // (up to several seconds away) - announce immediately, then report
     // every channel's current state so the hub is fully in sync right away.
+    // The per-channel reports are staggered via tickBootReportBurst()
+    // rather than fired in a tight loop here - see BOOT_REPORT_SPACING_MS.
     sendDiscoveryResponse();
-    for (uint8_t i = 0; i < SWITCH_COUNT; i++) {
-        sendStateReport(i, STATE_REPORT);
-    }
+    _bootReportNext = 0;
+    _lastBootReportMs = millis();
+}
+
+// Sends one boot-burst STATE_REPORT per call, no more often than
+// BOOT_REPORT_SPACING_MS apart, until every channel has reported once.
+// Non-blocking - just advances a little further on each tick().
+void HubLink::tickBootReportBurst(uint32_t nowMs) {
+    if (_bootReportNext >= SWITCH_COUNT) return; // burst already finished/inactive
+    if (nowMs - _lastBootReportMs < BOOT_REPORT_SPACING_MS) return;
+
+    sendStateReport(_bootReportNext, STATE_REPORT);
+    _bootReportNext++;
+    _lastBootReportMs = nowMs;
 }
 
 void HubLink::reportStateChange(uint8_t index) {
