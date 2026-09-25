@@ -13,11 +13,13 @@ void HubLink::begin(StateManager *state, ShiftRegister *sr, const char *ssid, co
     _password[sizeof(_password) - 1] = '\0';
 
     WiFi.mode(WIFI_STA);
+    WiFi.setSleepMode(WIFI_NONE_SLEEP);
     connectWifi(); // non-blocking - returns immediately, connection happens in the background
 }
 
 void HubLink::connectWifi() {
     WiFi.begin(_ssid, _password);
+    WiFi.setOutputPower(20.5); // dBm, ESP8266 max
     _lastReconnectAttemptMs = millis();
 }
 

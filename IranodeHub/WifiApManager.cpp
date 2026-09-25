@@ -61,11 +61,13 @@ void WifiApManager::applyDefault() {
 
 void WifiApManager::startAp() {
     WiFi.mode(WIFI_AP);
+    WiFi.setSleep(false);
     IPAddress hubIp, subnet;
     hubIp.fromString(HUB_IP_STR);
     subnet.fromString(SUBNET_STR);
     WiFi.softAPConfig(hubIp, hubIp, subnet);
     WiFi.softAP(_active.ssid, _active.password, 1, false, _active.maxConnections);
+    WiFi.setTxPower(WIFI_POWER_19_5dBm);
 }
 
 void WifiApManager::begin() {
