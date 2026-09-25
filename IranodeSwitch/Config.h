@@ -113,7 +113,9 @@ static const uint8_t COLOR_RGB_BITS[COLOR_COUNT] = {
 #define TOUCH_DEBOUNCE_MS      50UL
 #define RELAY_SAVE_DELAY_MS    300UL    // relay state: short, must survive a quick power loss
 #define COLOR_SAVE_DELAY_MS    3000UL   // color prefs: longer, coalesces UI fiddling
-#define FACTORY_RESET_HOLD_MS  10000UL  // hold every touch at once this long to wipe EEPROM + restart
+#define WIFI_CONFIG_HOLD_MS    5000UL   // hold every touch at once this long to enter Wi-Fi configuration mode
+#define FACTORY_RESET_HOLD_MS  10000UL  // hold every touch at once this long (from configuration mode) to wipe EEPROM + restart
+#define LED_FLASH_INTERVAL_MS  400UL    // RED/OFF flash half-period while in Wi-Fi configuration mode
 
 // ============================================================================
 // FIRMWARE VERSION
@@ -125,8 +127,12 @@ static const uint8_t COLOR_RGB_BITS[COLOR_COUNT] = {
 // ============================================================================
 // HUB CONNECTION
 // This device is a WiFi STATION only - it joins the hub's access point, it
-// never creates its own. There is no local web UI to configure this from
-// (the hub is the only interface), so these are fixed at compile time.
+// never creates its own for normal operation. Which network to join is no
+// longer fixed at compile time: it's read from persisted configuration
+// (see Persistence's WifiCredentials / WifiConfigManager), entered through
+// the device's own temporary configuration-mode AP (below) the first time
+// it boots with nothing saved, or whenever the 5-second all-touch gesture
+// is used from normal operation.
 //
 // HUB_IP is a plain string, not an IPAddress, on purpose: keeping Config.h
 // free of WiFi-library types means files that don't need networking
@@ -134,11 +140,23 @@ static const uint8_t COLOR_RGB_BITS[COLOR_COUNT] = {
 // this one shared header. HubLink.cpp turns it into a real IPAddress once,
 // in the one file that actually needs it.
 // ============================================================================
-#define HUB_WIFI_SSID       "IRANODE-HUB"
-#define HUB_WIFI_PASSWORD   "12345678"
 #define HUB_IP_STR          "192.168.4.1"
 #define HUB_PORT            4210
 #define DISCOVERY_PORT      4211
+
+// ============================================================================
+// WIFI CONFIGURATION MODE
+// The switch's own temporary access point, used only while no hub network
+// is configured yet (or the user has just asked to change it). Open/no
+// password by design - same reasoning as the hub's own unconfigured
+// default AP - so setup never depends on already knowing a secret. See
+// WifiConfigManager.
+// ============================================================================
+#define CONFIG_AP_SSID_PREFIX "IranodeSwitch-"
+#define CONFIG_AP_PASSWORD    ""
+#define CONFIG_AP_IP_STR      "192.168.4.1"
+#define CONFIG_AP_SUBNET_STR  "255.255.255.0"
+#define WIFI_CONFIG_RESTART_DELAY_MS 1200UL // lets the HTTP response reach the browser before ESP.restart()
 
 #define HEARTBEAT_INTERVAL_MS      5000UL
 #define WIFI_RECONNECT_INTERVAL_MS 5000UL  // how often to retry joining the hub while disconnected

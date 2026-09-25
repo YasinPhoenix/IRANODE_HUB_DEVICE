@@ -1,10 +1,11 @@
 #include "WebApi.h"
 #include "WebUI.h"
 
-void WebApi::begin(DeviceRegistry *registry, DeviceStore *store, CommsManager *comms) {
+void WebApi::begin(DeviceRegistry *registry, DeviceStore *store, CommsManager *comms, WifiApManager *wifiApManager) {
     _registry = registry;
     _store = store;
     _comms = comms;
+    _wifiApManager = wifiApManager;
 
     _server.on("/", HTTP_GET, [this]() { handleRoot(); });
     _server.on("/api/devices", HTTP_GET, [this]() { handleDeviceList(); });
@@ -13,7 +14,21 @@ void WebApi::begin(DeviceRegistry *registry, DeviceStore *store, CommsManager *c
     _server.on("/api/device/color", HTTP_POST, [this]() { handlePostColor(); });
     _server.on("/api/device/name", HTTP_POST, [this]() { handlePostName(); });
     _server.on("/api/device/channel-name", HTTP_POST, [this]() { handlePostChannelName(); });
+
+    // Never gated by requireConfigured() - these have to stay reachable
+    // regardless of state, since configuring the AP is the only thing an
+    // unconfigured hub allows.
+    _server.on("/wifi", HTTP_GET, [this]() { handleWifiConfigPage(); });
+    _server.on("/api/wifi-config", HTTP_GET, [this]() { handleGetWifiConfig(); });
+    _server.on("/api/wifi-config", HTTP_POST, [this]() { handlePostWifiConfig(); });
+
     _server.begin();
+}
+
+bool WebApi::requireConfigured() {
+    if (_wifiApManager->isConfigured()) return true;
+    _server.send(403, "text/plain", "hub is not configured - open /wifi to set it up");
+    return false;
 }
 
 void WebApi::tick() {
@@ -59,8 +74,80 @@ static void appendJsonString(String &json, const char *value) {
     json += "\"";
 }
 
+// While the hub is unconfigured (still on its default "IranodeHub-<id>" /
+// no-password AP) the main control page isn't reachable at all - every
+// visit to "/" is redirected to the AP configuration page instead, per
+// spec: "the normal/main Hub control page must not be accessible."
 void WebApi::handleRoot() {
+    if (!_wifiApManager->isConfigured()) {
+        _server.sendHeader("Location", "/wifi");
+        _server.send(302, "text/plain", "");
+        return;
+    }
     _server.send_P(200, "text/html", INDEX_HTML);
+}
+
+// GET /wifi - the AP configuration page. Always reachable (configured or
+// not): it's the *only* thing reachable while unconfigured, and while
+// configured it's how the header's "AP Configuration" button gets here.
+void WebApi::handleWifiConfigPage() {
+    _server.send_P(200, "text/html", WIFI_CONFIG_HTML);
+}
+
+// GET /api/wifi-config - current AP state for the config page to render.
+// Password is deliberately never echoed back, saved or not - the page
+// just leaves that field blank.
+void WebApi::handleGetWifiConfig() {
+    char defaultSsid[AP_MAX_SSID_LEN + 1];
+    _wifiApManager->defaultSsid(defaultSsid, sizeof(defaultSsid));
+
+    String json = "{\"configured\":";
+    json += _wifiApManager->isConfigured() ? "true" : "false";
+    json += ",\"ssid\":";
+    appendJsonString(json, _wifiApManager->currentSsid());
+    json += ",\"maxConnections\":";
+    json += String(_wifiApManager->currentMaxConnections());
+    json += ",\"defaultSsid\":";
+    appendJsonString(json, defaultSsid);
+    json += ",\"minPasswordLen\":";
+    json += String(AP_MIN_PASSWORD_LEN);
+    json += ",\"maxSsidLen\":";
+    json += String(AP_MAX_SSID_LEN);
+    json += ",\"maxPasswordLen\":";
+    json += String(AP_MAX_PASSWORD_LEN);
+    json += ",\"minMaxConn\":";
+    json += String(AP_MIN_MAX_CONN);
+    json += ",\"maxMaxConn\":";
+    json += String(AP_MAX_MAX_CONN);
+    json += "}";
+    _server.send(200, "application/json", json);
+}
+
+// POST /api/wifi-config - validates, persists, and (on success) restarts
+// the hub a moment later so the new AP comes up cleanly - see
+// WifiApManager::apply(). ssid/password/maxConnections are all required
+// fields; an absent password argument is treated the same as an empty one
+// (open network), matching how the config page's form always submits it.
+void WebApi::handlePostWifiConfig() {
+    if (!_server.hasArg("ssid") || !_server.hasArg("maxConnections")) {
+        _server.send(400, "text/plain", "missing or bad arguments");
+        return;
+    }
+    String ssidArg = _server.arg("ssid");
+    String passArg = _server.hasArg("password") ? _server.arg("password") : "";
+    int maxConnArg = _server.arg("maxConnections").toInt();
+    if (maxConnArg < 0 || maxConnArg > 255) {
+        _server.send(400, "text/plain", "bad maxConnections");
+        return;
+    }
+
+    String error;
+    bool ok = _wifiApManager->apply(ssidArg.c_str(), passArg.c_str(), (uint8_t)maxConnArg, error);
+    if (!ok) {
+        _server.send(400, "text/plain", error);
+        return;
+    }
+    _server.send(200, "text/plain", "saved - restarting");
 }
 
 // Appends everything after the opening "{" that appendDeviceJson/
@@ -126,6 +213,7 @@ void WebApi::appendDeviceJson(String &json, const KnownDevice &device, bool incl
 // actually clicks one. A device's name is part of that detail, so an
 // offline device shows its raw hex id in the list until expanded.
 void WebApi::handleDeviceList() {
+    if (!requireConfigured()) return;
     uint8_t indices[MAX_KNOWN_DEVICES];
     uint8_t count = _registry->sortedIndices(indices, MAX_KNOWN_DEVICES);
 
@@ -143,6 +231,7 @@ void WebApi::handleDeviceList() {
 // GET /api/device/detail?id=<hex> - only called when a collapsed offline
 // card is clicked.
 void WebApi::handleDeviceDetail() {
+    if (!requireConfigured()) return;
     uint32_t id;
     if (!_server.hasArg("id") || !parseHexId(_server.arg("id"), id)) {
         _server.send(400, "application/json", "{\"found\":false}");
@@ -162,6 +251,7 @@ void WebApi::handleDeviceDetail() {
 }
 
 void WebApi::handlePostRelay() {
+    if (!requireConfigured()) return;
     uint32_t id;
     if (!_server.hasArg("id") || !_server.hasArg("channel") || !_server.hasArg("value") ||
         !parseHexId(_server.arg("id"), id)) {
@@ -176,6 +266,7 @@ void WebApi::handlePostRelay() {
 }
 
 void WebApi::handlePostColor() {
+    if (!requireConfigured()) return;
     uint32_t id;
     if (!_server.hasArg("id") || !_server.hasArg("channel") ||
         !_server.hasArg("slot") || !_server.hasArg("color") ||
@@ -196,6 +287,7 @@ void WebApi::handlePostColor() {
 // online. It's still rejected for a device the hub has genuinely never
 // heard of, since there'd be nothing sensible to attach the name to.
 void WebApi::handlePostName() {
+    if (!requireConfigured()) return;
     uint32_t id;
     if (!_server.hasArg("id") || !_server.hasArg("name") || !parseHexId(_server.arg("id"), id)) {
         _server.send(400, "text/plain", "missing or bad arguments");

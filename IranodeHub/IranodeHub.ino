@@ -4,22 +4,24 @@
 #include "DeviceStore.h"
 #include "CommsManager.h"
 #include "WebApi.h"
+#include "WifiApManager.h"
 
 DeviceRegistry deviceRegistry;
 DeviceStore deviceStore;
 CommsManager commsManager;
 WebApi webApi;
+WifiApManager wifiApManager;
 
 void setup() {
     Serial.begin(115200);
 
     // 1. Host the network - every device joins this AP as a station.
-    WiFi.mode(WIFI_AP);
-    IPAddress hubIp, subnet;
-    hubIp.fromString(HUB_IP_STR);
-    subnet.fromString(SUBNET_STR);
-    WiFi.softAPConfig(hubIp, hubIp, subnet);
-    WiFi.softAP(AP_SSID, AP_PASSWORD, 1, false, 10);
+    //    Brings up either a previously-saved AP configuration, or the
+    //    default unconfigured "IranodeHub-<id>" / no-password AP - see
+    //    WifiApManager. Everything else (device dashboard, comms) stays
+    //    reachable or gated based on wifiApManager.isConfigured(), so it
+    //    has to run before WebApi/CommsManager are set up.
+    wifiApManager.begin();
 
     // 2. Bring up storage and seed the known-device list from filenames
     //    only - no file content is read at boot (see DeviceStore). Every
@@ -36,15 +38,17 @@ void setup() {
     // 3. Comms (opens the UDP socket, sends the first discovery broadcast)
     //    and the dashboard.
     commsManager.begin(&deviceRegistry, &deviceStore);
-    webApi.begin(&deviceRegistry, &deviceStore, &commsManager);
+    webApi.begin(&deviceRegistry, &deviceStore, &commsManager, &wifiApManager);
 
     Serial.print("IRANODE HUB up, ");
     Serial.print(knownCount);
-    Serial.println(" known device(s) loaded from flash");
+    Serial.print(" known device(s) loaded from flash, AP ");
+    Serial.println(wifiApManager.isConfigured() ? "configured" : "awaiting configuration");
 }
 
 void loop() {
     uint32_t now = millis();
     commsManager.tick(now);
     webApi.tick();
+    wifiApManager.tick(now);
 }

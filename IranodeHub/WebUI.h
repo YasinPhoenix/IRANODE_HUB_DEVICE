@@ -32,15 +32,45 @@ body{
   max-height:80px;
   display:flex;
   align-items:center;
-  justify-content:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:0 14px;
   background:var(--surface);
   border-bottom:1px solid var(--border);
+  /* Physical left/right order regardless of the page's RTL direction -
+     same reasoning as .channel-grid: the button belongs on the visual
+     left and the logo on the visual right no matter the text direction. */
+  direction:ltr;
 }
 .iranode-logo{
   display:block;
-  width:min(78vw,180px);
+  width:min(40vw,180px);
   height:auto;
   flex:0 0 auto;
+}
+.ap-config-btn{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex:0 1 auto;
+  min-width:0;
+  padding:8px 12px;
+  border-radius:var(--radius-sm);
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  color:var(--text);
+  text-decoration:none;
+  font-size:.78rem;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.ap-config-btn:active{background:var(--tab-bg)}
+.ap-config-btn svg{width:16px;height:16px;flex:0 0 auto}
+.ap-config-btn span{overflow:hidden;text-overflow:ellipsis;direction:rtl}
+@media (max-width:360px){
+  .ap-config-btn span{display:none} /* icon-only on very narrow screens */
+  .iranode-logo{width:min(34vw,140px)}
 }
 
 .conn-issue{
@@ -176,6 +206,13 @@ body{
 <body>
 
 <div class="logo-area">
+  <a class="ap-config-btn" href="/wifi" aria-label="تنظیمات Wi-Fi">
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 20a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Z" fill="currentColor"/>
+      <path d="M4 9.5c4.5-4 11.5-4 16 0M6.8 13c3.2-2.6 7.2-2.6 10.4 0M9.6 16.4c1.6-1.2 3.2-1.2 4.8 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    <span>تنظیمات Wi-Fi</span>
+  </a>
   <svg class="iranode-logo"
        viewBox="0 0 893 256"
        xmlns="http://www.w3.org/2000/svg"
@@ -487,6 +524,182 @@ function renderPanel() {
 
 setInterval(loadDevices, 300);
 loadDevices();
+</script>
+</body>
+</html>
+)rawliteral";
+
+// The AP configuration page - reachable at all times via /wifi, and the
+// *only* page reachable while the hub is still on its default
+// "IranodeHub-<id>" / no-password AP (see WebApi::handleRoot()). Kept as
+// its own self-contained document rather than a mode of INDEX_HTML: the
+// two pages have almost nothing in common (no device list/tabs/polling
+// here) and INDEX_HTML is only ever served once the hub is already
+// configured, so there's no state it needs to share with this page.
+static const char WIFI_CONFIG_HTML[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>تنظیمات Wi-Fi - Iranode Hub</title>
+<style>
+:root{
+  --bg:#101113;--surface:#17181b;--surface-2:#1e2024;--border:#2a2c30;
+  --text:#e8e9ea;--muted:#86898f;--accent:#e05a4e;
+  --offline-dot:#8a5a3d;--online-dot:#4a8a63;
+  --radius-lg:18px;--radius-md:13px;--radius-sm:8px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,sans-serif;
+  padding:20px 16px 40px;
+  padding-top:calc(20px + env(safe-area-inset-top,0));
+  padding-bottom:calc(40px + env(safe-area-inset-bottom,0));
+}
+.wrap{max-width:420px;margin:0 auto}
+h1{font-size:1.05rem;margin:0 0 4px;text-align:center}
+.status{
+  display:flex;align-items:center;gap:8px;justify-content:center;
+  font-size:.8rem;color:var(--muted);margin:6px 0 20px;
+}
+.status .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+.status.unconfigured .dot{background:var(--offline-dot)}
+.status.configured .dot{background:var(--online-dot)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px}
+.card + .card{margin-top:14px}
+.card h2{font-size:.85rem;margin:0 0 4px;color:var(--text)}
+.card .desc{font-size:.76rem;color:var(--muted);line-height:1.7;margin-bottom:14px}
+label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px;margin-top:14px}
+label:first-of-type{margin-top:0}
+input{
+  width:100%;font-size:.92rem;color:var(--text);background:var(--surface-2);
+  border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;
+  font-family:inherit;direction:ltr;text-align:right;
+}
+input:focus{outline:none;border-color:var(--muted)}
+.hint{font-size:.72rem;color:var(--muted);margin-top:6px;line-height:1.6}
+button{
+  width:100%;margin-top:18px;padding:12px;border:none;border-radius:var(--radius-sm);
+  background:var(--accent);color:#fff;font-size:.92rem;font-weight:700;cursor:pointer;
+  font-family:inherit;
+}
+button:disabled{opacity:.5;cursor:default}
+.msg{margin-top:12px;font-size:.8rem;line-height:1.6;display:none}
+.msg.show{display:block}
+.msg.err{color:#f2a4a4}
+.msg.ok{color:#8fd19e}
+.back-link{
+  display:block;text-align:center;margin-top:18px;color:var(--muted);
+  font-size:.8rem;text-decoration:none;
+}
+.back-link.show{display:block}
+.back-link{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>تنظیمات دسترسی (Wi-Fi) هاب</h1>
+  <div class="status" id="status"><span class="dot"></span><span id="statusText">در حال بارگذاری…</span></div>
+
+  <div class="card">
+    <h2>نام و رمز شبکه هاب</h2>
+    <div class="desc">دستگاه‌ها (کلیدهای دیواری) برای اتصال به هاب، به همین نام و رمز نیاز دارند. پس از ذخیره، هاب و همه دستگاه‌های متصل باید دوباره به شبکه جدید متصل شوند.</div>
+
+    <label for="ssid">نام شبکه (SSID)</label>
+    <input id="ssid" type="text" maxlength="32" autocomplete="off">
+
+    <label for="password">رمز عبور</label>
+    <input id="password" type="password" maxlength="64" autocomplete="off">
+    <div class="hint" id="passHint">برای شبکه بدون رمز خالی بگذارید، در غیر این صورت حداقل ۸ کاراکتر.</div>
+
+    <label for="maxConn">حداکثر تعداد دستگاه متصل</label>
+    <input id="maxConn" type="number" min="1" max="10" step="1">
+
+    <button id="saveBtn">ذخیره و راه‌اندازی مجدد</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <a class="back-link" id="backLink" href="/">بازگشت به صفحه اصلی هاب</a>
+</div>
+
+<script>
+const statusEl = document.getElementById('status');
+const statusTextEl = document.getElementById('statusText');
+const ssidEl = document.getElementById('ssid');
+const passEl = document.getElementById('password');
+const maxConnEl = document.getElementById('maxConn');
+const saveBtn = document.getElementById('saveBtn');
+const msgEl = document.getElementById('msg');
+const backLink = document.getElementById('backLink');
+const passHint = document.getElementById('passHint');
+
+let minPassLen = 8, maxSsidLen = 32, maxPassLen = 64, minMaxConn = 1, maxMaxConn = 10;
+
+function showMsg(text, isError) {
+  msgEl.textContent = text;
+  msgEl.className = 'msg show ' + (isError ? 'err' : 'ok');
+}
+
+function loadStatus() {
+  fetch('/api/wifi-config').then(r => r.json()).then(d => {
+    minPassLen = d.minPasswordLen; maxSsidLen = d.maxSsidLen; maxPassLen = d.maxPasswordLen;
+    minMaxConn = d.minMaxConn; maxMaxConn = d.maxMaxConn;
+    ssidEl.maxLength = maxSsidLen; passEl.maxLength = maxPassLen;
+    maxConnEl.min = minMaxConn; maxConnEl.max = maxMaxConn;
+    passHint.textContent = 'برای شبکه بدون رمز خالی بگذارید، در غیر این صورت حداقل ' + minPassLen + ' کاراکتر.';
+
+    if (d.configured) {
+      statusEl.className = 'status configured';
+      statusTextEl.textContent = 'هاب پیکربندی شده است';
+      backLink.className = 'back-link show';
+    } else {
+      statusEl.className = 'status unconfigured';
+      statusTextEl.textContent = 'هاب هنوز پیکربندی نشده - شبکه پیش‌فرض: ' + d.defaultSsid;
+      backLink.className = 'back-link';
+    }
+    ssidEl.value = d.configured ? d.ssid : '';
+    ssidEl.placeholder = d.configured ? '' : d.defaultSsid;
+    maxConnEl.value = d.maxConnections;
+  }).catch(() => {
+    statusTextEl.textContent = 'خطا در دریافت وضعیت';
+  });
+}
+loadStatus();
+
+saveBtn.addEventListener('click', () => {
+  const ssid = ssidEl.value.trim();
+  const password = passEl.value;
+  const maxConn = parseInt(maxConnEl.value, 10);
+
+  if (!ssid || ssid.length > maxSsidLen) {
+    showMsg('نام شبکه باید بین ۱ تا ' + maxSsidLen + ' کاراکتر باشد.', true);
+    return;
+  }
+  if (password.length !== 0 && password.length < minPassLen) {
+    showMsg('رمز عبور باید خالی یا حداقل ' + minPassLen + ' کاراکتر باشد.', true);
+    return;
+  }
+  if (!maxConn || maxConn < minMaxConn || maxConn > maxMaxConn) {
+    showMsg('حداکثر تعداد دستگاه باید بین ' + minMaxConn + ' تا ' + maxMaxConn + ' باشد.', true);
+    return;
+  }
+
+  saveBtn.disabled = true;
+  const body = new URLSearchParams({ ssid, password, maxConnections: String(maxConn) });
+  fetch('/api/wifi-config', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body })
+    .then(async r => {
+      const text = await r.text();
+      if (r.ok) {
+        showMsg('ذخیره شد - هاب در حال راه‌اندازی مجدد با شبکه جدید است…', false);
+      } else {
+        showMsg(text || 'خطا در ذخیره‌سازی', true);
+        saveBtn.disabled = false;
+      }
+    })
+    .catch(() => { showMsg('ارتباط با هاب برقرار نشد.', true); saveBtn.disabled = false; });
+});
 </script>
 </body>
 </html>

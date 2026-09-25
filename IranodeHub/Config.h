@@ -9,9 +9,28 @@
 // plain strings, not IPAddress, so files that don't need networking
 // (DeviceStore) aren't forced to pull WiFi headers in through this shared
 // header - same reasoning as the switch project's Config.h.
+//
+// SSID/password/max-connection-count are no longer fixed here - they're
+// user-configurable and persisted by WifiApManager (see WifiApManager.h).
+// AP_SSID_PREFIX is what an out-of-the-box, not-yet-configured hub's AP is
+// named: "IranodeHub-<8 hex digit id>", the id coming from the hub's own
+// WiFi MAC (see hubDeviceId() in WifiApManager.h). The hub's IP/subnet stay
+// fixed even across a reconfiguration - only SSID/password/max connections
+// are ever user-editable - so every other module that already assumes
+// 192.168.4.1 (CommsManager, DeviceStore's peers, the switch project's
+// HUB_IP_STR) keeps working unmodified.
 // ============================================================================
-#define AP_SSID     "IRANODE-HUB"
-#define AP_PASSWORD "12345678"
+#define AP_SSID_PREFIX "IranodeHub-"
+
+#define AP_MAX_SSID_LEN     32
+#define AP_MAX_PASSWORD_LEN 64
+#define AP_MIN_PASSWORD_LEN 8   // matches WPA2's minimum; 0 (empty/open) is also allowed
+#define AP_MIN_MAX_CONN     1
+#define AP_MAX_MAX_CONN     10  // ESP32 SoftAP hard ceiling
+#define AP_DEFAULT_MAX_CONN 8
+
+#define AP_CONFIG_SAVE_PATH   "/config/ap.bin"
+#define AP_RESTART_DELAY_MS   1200UL // lets the HTTP response reach the browser before ESP.restart()
 
 #define HUB_IP_STR           "192.168.4.1"
 #define SUBNET_STR           "255.255.255.0"

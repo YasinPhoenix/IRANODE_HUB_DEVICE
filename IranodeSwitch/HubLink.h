@@ -8,6 +8,7 @@
 #include "Protocol.h"
 #include "State.h"
 #include "ShiftRegister.h"
+#include "Persistence.h" // MAX_WIFI_SSID_LEN / MAX_WIFI_PASS_LEN
 
 // Owns the connection to the hub: joining its AP, the UDP socket, and every
 // IranodePacket sent or received.
@@ -19,7 +20,10 @@
 // StateManager::begin() runs, it just has nothing to report to yet.
 class HubLink {
 public:
-    void begin(StateManager *state, ShiftRegister *sr);
+    // ssid/password are copied internally (fixed-size buffers, no String) -
+    // connectWifi() re-issues WiFi.begin() with them on every reconnect
+    // attempt, so the caller's buffers don't need to outlive this call.
+    void begin(StateManager *state, ShiftRegister *sr, const char *ssid, const char *password);
     void tick(uint32_t nowMs);
 
     // Call right after a touch-triggered StateManager mutation, so the hub
@@ -36,6 +40,9 @@ private:
     IPAddress _hubIp;
     uint32_t _deviceId = 0;
     uint16_t _sequence = 0;
+
+    char _ssid[MAX_WIFI_SSID_LEN + 1];
+    char _password[MAX_WIFI_PASS_LEN + 1];
 
     bool _connected = false;
     uint32_t _lastReconnectAttemptMs = 0;

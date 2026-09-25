@@ -7,10 +7,11 @@
 #include "DeviceRegistry.h"
 #include "DeviceStore.h"
 #include "CommsManager.h"
+#include "WifiApManager.h"
 
 class WebApi {
 public:
-    void begin(DeviceRegistry *registry, DeviceStore *store, CommsManager *comms);
+    void begin(DeviceRegistry *registry, DeviceStore *store, CommsManager *comms, WifiApManager *wifiApManager);
     void tick(); // pumps the underlying WebServer
 
 private:
@@ -18,6 +19,7 @@ private:
     DeviceRegistry *_registry = nullptr;
     DeviceStore *_store = nullptr;
     CommsManager *_comms = nullptr;
+    WifiApManager *_wifiApManager = nullptr;
 
     void handleRoot();
     void handleDeviceList();
@@ -26,6 +28,17 @@ private:
     void handlePostColor();
     void handlePostName();
     void handlePostChannelName();
+
+    void handleWifiConfigPage();
+    void handleGetWifiConfig();
+    void handlePostWifiConfig();
+
+    // Sends 403 and returns false if the hub isn't configured yet - guards
+    // every device-facing route (list/detail/relay/color/name/channel-
+    // name) so the only thing reachable in the unconfigured/default-AP
+    // state is the AP configuration page and its API, per spec: "the user
+    // should only be able to configure the AP."
+    bool requireConfigured();
 
     // Appends this device's type-specific object (e.g. "switch":{...}) to
     // json, plus the universal name fields. A future device type adds its

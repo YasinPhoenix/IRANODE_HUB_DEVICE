@@ -23,16 +23,38 @@ bool InputManager::poll(uint8_t &outIndex) {
     return false;
 }
 
-bool InputManager::checkFactoryReset(uint32_t nowMs) {
+bool InputManager::allCurrentlyHeld() const {
     for (uint8_t i = 0; i < SWITCH_COUNT; i++) {
-        if (digitalRead(TOUCH_PINS[i]) != LOW) {
-            _allHeldSinceMs = 0; // not everyone is pressed - reset the timer
-            return false;
-        }
+        if (digitalRead(TOUCH_PINS[i]) != LOW) return false;
+    }
+    return true;
+}
+
+uint32_t InputManager::updateHoldTimer(uint32_t nowMs) {
+    if (!allCurrentlyHeld()) {
+        _allHeldSinceMs = 0; // not everyone is pressed - reset for the next hold
+        _consumedForThisHold = false;
+        return 0;
     }
     if (_allHeldSinceMs == 0) {
         _allHeldSinceMs = nowMs; // just became all-held - start timing
-        return false;
+        return 0;
     }
-    return (nowMs - _allHeldSinceMs) >= FACTORY_RESET_HOLD_MS;
+    return nowMs - _allHeldSinceMs;
+}
+
+bool InputManager::checkConfigModeGesture(uint32_t nowMs) {
+    uint32_t held = updateHoldTimer(nowMs);
+    if (held == 0 || _consumedForThisHold) return false;
+    if (held >= WIFI_CONFIG_HOLD_MS) {
+        _consumedForThisHold = true; // this hold is spent - checkFactoryReset() won't fire for it
+        return true;
+    }
+    return false;
+}
+
+bool InputManager::checkFactoryReset(uint32_t nowMs) {
+    uint32_t held = updateHoldTimer(nowMs);
+    if (held == 0 || _consumedForThisHold) return false;
+    return held >= FACTORY_RESET_HOLD_MS;
 }

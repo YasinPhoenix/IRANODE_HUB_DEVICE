@@ -1,17 +1,23 @@
 #include "HubLink.h"
+#include <string.h>
 
-void HubLink::begin(StateManager *state, ShiftRegister *sr) {
+void HubLink::begin(StateManager *state, ShiftRegister *sr, const char *ssid, const char *password) {
     _state = state;
     _sr = sr;
     _deviceId = ESP.getChipId();
     _hubIp.fromString(HUB_IP_STR);
+
+    strncpy(_ssid, ssid, sizeof(_ssid) - 1);
+    _ssid[sizeof(_ssid) - 1] = '\0';
+    strncpy(_password, password, sizeof(_password) - 1);
+    _password[sizeof(_password) - 1] = '\0';
 
     WiFi.mode(WIFI_STA);
     connectWifi(); // non-blocking - returns immediately, connection happens in the background
 }
 
 void HubLink::connectWifi() {
-    WiFi.begin(HUB_WIFI_SSID, HUB_WIFI_PASSWORD);
+    WiFi.begin(_ssid, _password);
     _lastReconnectAttemptMs = millis();
 }
 
@@ -72,6 +78,14 @@ void HubLink::tickBootReportBurst(uint32_t nowMs) {
 }
 
 void HubLink::reportStateChange(uint8_t index) {
+    // begin() may not have run yet - e.g. the switch is still in its
+    // first-boot/no-saved-credentials Wi-Fi configuration mode, where
+    // WifiConfigManager deliberately skips calling HubLink::begin() at
+    // all (see WifiConfigManager::begin()). Touch input keeps working in
+    // that mode (see IranodeSwitch.ino), so this can legitimately be
+    // called with _state still null - nothing to report to a hub this
+    // device was never told how to reach.
+    if (_state == nullptr) return;
     sendStateReport(index, STATE_CHANGED);
 }
 
