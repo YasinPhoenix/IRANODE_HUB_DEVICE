@@ -1,11 +1,16 @@
 #include "WebApi.h"
 #include "WebUI.h"
+#include <stdlib.h>
 
-void WebApi::begin(DeviceRegistry *registry, DeviceStore *store, CommsManager *comms, WifiApManager *wifiApManager) {
+void WebApi::begin(DeviceRegistry *registry, DeviceStore *store, CommsManager *comms,
+                   WifiApManager *wifiApManager, NetworkConfigManager *network,
+                   MqttManager *mqtt) {
     _registry = registry;
     _store = store;
     _comms = comms;
     _wifiApManager = wifiApManager;
+    _network = network;
+    _mqtt = mqtt;
 
     _server.on("/", HTTP_GET, [this]() { handleRoot(); });
     _server.on("/api/devices", HTTP_GET, [this]() { handleDeviceList(); });
@@ -21,6 +26,9 @@ void WebApi::begin(DeviceRegistry *registry, DeviceStore *store, CommsManager *c
     _server.on("/wifi", HTTP_GET, [this]() { handleWifiConfigPage(); });
     _server.on("/api/wifi-config", HTTP_GET, [this]() { handleGetWifiConfig(); });
     _server.on("/api/wifi-config", HTTP_POST, [this]() { handlePostWifiConfig(); });
+    _server.on("/network", HTTP_GET, [this]() { handleNetworkConfigPage(); });
+    _server.on("/api/network-config", HTTP_GET, [this]() { handleGetNetworkConfig(); });
+    _server.on("/api/network-config", HTTP_POST, [this]() { handlePostNetworkConfig(); });
 
     _server.begin();
 }
@@ -94,6 +102,14 @@ void WebApi::handleWifiConfigPage() {
     _server.send_P(200, "text/html", WIFI_CONFIG_HTML);
 }
 
+void WebApi::handleNetworkConfigPage() {
+    if (!_wifiApManager->isConfigured()) {
+        _server.send(403, "text/plain", "configure the hub access point first");
+        return;
+    }
+    _server.send_P(200, "text/html", NETWORK_CONFIG_HTML);
+}
+
 // GET /api/wifi-config - current AP state for the config page to render.
 // Password is deliberately never echoed back, saved or not - the page
 // just leaves that field blank.
@@ -144,6 +160,95 @@ void WebApi::handlePostWifiConfig() {
     String error;
     bool ok = _wifiApManager->apply(ssidArg.c_str(), passArg.c_str(), (uint8_t)maxConnArg, error);
     if (!ok) {
+        _server.send(400, "text/plain", error);
+        return;
+    }
+    _server.send(200, "text/plain", "saved - restarting");
+}
+
+void WebApi::handleGetNetworkConfig() {
+    if (!_wifiApManager->isConfigured()) {
+        _server.send(403, "application/json", "{\"error\":\"configure the hub access point first\"}");
+        return;
+    }
+
+    const NetworkSettings &settings = _network->settings();
+    String json = "{\"uplinkSsid\":";
+    appendJsonString(json, settings.uplinkSsid);
+    json += ",\"mqttHost\":";
+    appendJsonString(json, settings.mqttHost);
+    json += ",\"mqttPort\":";
+    json += String(settings.mqttPort);
+    json += ",\"mqttUsername\":";
+    appendJsonString(json, settings.mqttUsername);
+    json += ",\"mqttTls\":";
+    json += settings.mqttTls ? "true" : "false";
+    json += ",\"wifiConnected\":";
+    json += WiFi.status() == WL_CONNECTED ? "true" : "false";
+    json += ",\"mqttConnected\":";
+    json += _mqtt->connected() ? "true" : "false";
+    json += "}";
+    _server.send(200, "application/json", json);
+}
+
+void WebApi::handlePostNetworkConfig() {
+    if (!_wifiApManager->isConfigured()) {
+        _server.send(403, "text/plain", "configure the hub access point first");
+        return;
+    }
+    if (!_server.hasArg("mqttPort") || !_server.hasArg("mqttTls")) {
+        _server.send(400, "text/plain", "missing or bad arguments");
+        return;
+    }
+
+    String uplinkSsid = _server.arg("uplinkSsid");
+    String uplinkPassword = _server.arg("uplinkPassword");
+    String mqttHost = _server.arg("mqttHost");
+    String mqttUsername = _server.arg("mqttUsername");
+    String mqttPassword = _server.arg("mqttPassword");
+    String caCert = _server.arg("mqttCaCert");
+    String portArg = _server.arg("mqttPort");
+    String tlsArg = _server.arg("mqttTls");
+
+    if (uplinkSsid.length() >= UPLINK_SSID_LEN ||
+        uplinkPassword.length() >= UPLINK_PASSWORD_LEN ||
+        mqttHost.length() >= MQTT_HOST_LEN ||
+        mqttUsername.length() >= MQTT_USERNAME_LEN ||
+        mqttPassword.length() >= MQTT_PASSWORD_LEN ||
+        caCert.length() >= MQTT_CA_CERT_LEN) {
+        _server.send(400, "text/plain", "one or more fields are too long");
+        return;
+    }
+
+    char *portEnd = nullptr;
+    unsigned long port = strtoul(portArg.c_str(), &portEnd, 10);
+    if (portArg.length() == 0 || !portEnd || *portEnd != '\0' || port > 65535) {
+        _server.send(400, "text/plain", "bad mqttPort");
+        return;
+    }
+    if (tlsArg != "0" && tlsArg != "1") {
+        _server.send(400, "text/plain", "bad mqttTls");
+        return;
+    }
+
+    NetworkSettings settings = _network->settings();
+    strlcpy(settings.uplinkSsid, uplinkSsid.c_str(), sizeof(settings.uplinkSsid));
+    if (uplinkPassword.length()) {
+        strlcpy(settings.uplinkPassword, uplinkPassword.c_str(), sizeof(settings.uplinkPassword));
+    }
+    strlcpy(settings.mqttHost, mqttHost.c_str(), sizeof(settings.mqttHost));
+    settings.mqttPort = static_cast<uint16_t>(port);
+    strlcpy(settings.mqttUsername, mqttUsername.c_str(), sizeof(settings.mqttUsername));
+    if (mqttPassword.length()) {
+        strlcpy(settings.mqttPassword, mqttPassword.c_str(), sizeof(settings.mqttPassword));
+    }
+    settings.mqttTls = tlsArg == "1" ? 1 : 0;
+    if (caCert.length()) {
+        strlcpy(settings.mqttCaCert, caCert.c_str(), sizeof(settings.mqttCaCert));
+    }
+
+    String error;
+    if (!_network->apply(settings, error)) {
         _server.send(400, "text/plain", error);
         return;
     }

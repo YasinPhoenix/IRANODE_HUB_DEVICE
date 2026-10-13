@@ -60,7 +60,7 @@ void WifiApManager::applyDefault() {
 }
 
 void WifiApManager::startAp() {
-    WiFi.mode(WIFI_AP);
+    WiFi.mode(WIFI_AP_STA);
     WiFi.setSleep(false);
     IPAddress hubIp, subnet;
     hubIp.fromString(HUB_IP_STR);

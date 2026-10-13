@@ -8,10 +8,14 @@
 #include "DeviceStore.h"
 #include "CommsManager.h"
 #include "WifiApManager.h"
+#include "NetworkConfigManager.h"
+#include "MqttManager.h"
 
 class WebApi {
 public:
-    void begin(DeviceRegistry *registry, DeviceStore *store, CommsManager *comms, WifiApManager *wifiApManager);
+    void begin(DeviceRegistry *registry, DeviceStore *store, CommsManager *comms,
+               WifiApManager *wifiApManager, NetworkConfigManager *network,
+               MqttManager *mqtt);
     void tick(); // pumps the underlying WebServer
 
 private:
@@ -20,6 +24,8 @@ private:
     DeviceStore *_store = nullptr;
     CommsManager *_comms = nullptr;
     WifiApManager *_wifiApManager = nullptr;
+    NetworkConfigManager *_network = nullptr;
+    MqttManager *_mqtt = nullptr;
 
     void handleRoot();
     void handleDeviceList();
@@ -32,6 +38,9 @@ private:
     void handleWifiConfigPage();
     void handleGetWifiConfig();
     void handlePostWifiConfig();
+    void handleNetworkConfigPage();
+    void handleGetNetworkConfig();
+    void handlePostNetworkConfig();
 
     // Sends 403 and returns false if the hub isn't configured yet - guards
     // every device-facing route (list/detail/relay/color/name/channel-

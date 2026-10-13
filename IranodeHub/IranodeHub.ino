@@ -5,12 +5,16 @@
 #include "CommsManager.h"
 #include "WebApi.h"
 #include "WifiApManager.h"
+#include "NetworkConfigManager.h"
+#include "MqttManager.h"
 
 DeviceRegistry deviceRegistry;
 DeviceStore deviceStore;
 CommsManager commsManager;
 WebApi webApi;
 WifiApManager wifiApManager;
+NetworkConfigManager networkConfigManager;
+MqttManager mqttManager;
 
 void setup() {
     Serial.begin(115200);
@@ -22,6 +26,7 @@ void setup() {
     //    reachable or gated based on wifiApManager.isConfigured(), so it
     //    has to run before WebApi/CommsManager are set up.
     wifiApManager.begin();
+    networkConfigManager.begin();
 
     // 2. Bring up storage and seed the known-device list from filenames
     //    only - no file content is read at boot (see DeviceStore). Every
@@ -38,7 +43,9 @@ void setup() {
     // 3. Comms (opens the UDP socket, sends the first discovery broadcast)
     //    and the dashboard.
     commsManager.begin(&deviceRegistry, &deviceStore);
-    webApi.begin(&deviceRegistry, &deviceStore, &commsManager, &wifiApManager);
+    mqttManager.begin(&networkConfigManager, &deviceRegistry, &deviceStore, &commsManager);
+    webApi.begin(&deviceRegistry, &deviceStore, &commsManager, &wifiApManager,
+                 &networkConfigManager, &mqttManager);
 
     Serial.print("IRANODE HUB up, ");
     Serial.print(knownCount);
@@ -49,6 +56,8 @@ void setup() {
 void loop() {
     uint32_t now = millis();
     commsManager.tick(now);
+    networkConfigManager.tick(now);
+    mqttManager.tick(now);
     webApi.tick();
     wifiApManager.tick(now);
 }

@@ -621,6 +621,7 @@ button:disabled{opacity:.5;cursor:default}
     <div class="msg" id="msg"></div>
   </div>
 
+  <a class="back-link" id="networkLink" href="/network">تنظیم اتصال اینترنت و MQTT</a>
   <a class="back-link" id="backLink" href="/">بازگشت به صفحه اصلی هاب</a>
 </div>
 
@@ -633,6 +634,7 @@ const maxConnEl = document.getElementById('maxConn');
 const saveBtn = document.getElementById('saveBtn');
 const msgEl = document.getElementById('msg');
 const backLink = document.getElementById('backLink');
+const networkLink = document.getElementById('networkLink');
 const passHint = document.getElementById('passHint');
 
 let minPassLen = 8, maxSsidLen = 32, maxPassLen = 64, minMaxConn = 1, maxMaxConn = 10;
@@ -654,10 +656,12 @@ function loadStatus() {
       statusEl.className = 'status configured';
       statusTextEl.textContent = 'هاب پیکربندی شده است';
       backLink.className = 'back-link show';
+      networkLink.className = 'back-link show';
     } else {
       statusEl.className = 'status unconfigured';
       statusTextEl.textContent = 'هاب هنوز پیکربندی نشده - شبکه پیش‌فرض: ' + d.defaultSsid;
       backLink.className = 'back-link';
+      networkLink.className = 'back-link';
     }
     ssidEl.value = d.configured ? d.ssid : '';
     ssidEl.placeholder = d.configured ? '' : d.defaultSsid;
@@ -699,6 +703,118 @@ saveBtn.addEventListener('click', () => {
       }
     })
     .catch(() => { showMsg('ارتباط با هاب برقرار نشد.', true); saveBtn.disabled = false; });
+});
+</script>
+</body>
+</html>
+)rawliteral";
+
+static const char NETWORK_CONFIG_HTML[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>اتصال اینترنت و MQTT - Iranode Hub</title>
+<style>
+:root{--bg:#101113;--surface:#17181b;--surface-2:#1e2024;--border:#2a2c30;--text:#e8e9ea;--muted:#86898f;--accent:#e05a4e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,sans-serif;padding:20px 16px 40px}
+.wrap{max-width:520px;margin:0 auto}
+h1{font-size:1.05rem;text-align:center}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;margin-top:14px}
+h2{font-size:.9rem;margin:0 0 8px}
+.desc,.hint{font-size:.76rem;color:var(--muted);line-height:1.7}
+label{display:block;font-size:.8rem;color:var(--muted);margin:14px 0 6px}
+input,textarea{width:100%;font-size:.9rem;color:var(--text);background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;direction:ltr;text-align:left}
+textarea{min-height:130px;resize:vertical}
+input[type=checkbox]{width:auto}
+.check{display:flex;align-items:center;gap:8px;direction:rtl}
+button{width:100%;margin-top:18px;padding:12px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-size:.92rem;font-weight:700}
+button:disabled{opacity:.5}
+.msg{display:none;margin-top:12px;font-size:.8rem;line-height:1.6}
+.msg.show{display:block}.msg.err{color:#f2a4a4}.msg.ok{color:#8fd19e}
+a{display:block;text-align:center;margin-top:18px;color:var(--muted);font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>اتصال آنلاین هاب</h1>
+  <div class="card">
+    <h2>شبکه اینترنت (Router Wi-Fi)</h2>
+    <div class="desc">هاب همچنان شبکه محلی خود را برای کلیدها نگه می‌دارد و هم‌زمان به شبکه روتر متصل می‌شود. شبکه روتر نباید از بازه 192.168.4.0/24 باشد. برای قطع اتصال، نام شبکه را خالی ذخیره کنید.</div>
+    <label for="uplinkSsid">نام شبکه روتر (SSID)</label>
+    <input id="uplinkSsid" maxlength="32" autocomplete="off">
+    <label for="uplinkPassword">رمز شبکه روتر</label>
+    <input id="uplinkPassword" type="password" maxlength="63" autocomplete="new-password">
+    <div class="hint">برای حفظ رمز ذخیره‌شده، این فیلد را خالی بگذارید. تغییر SSID به شبکه‌ای با رمز متفاوت نیازمند واردکردن رمز جدید است.</div>
+  </div>
+  <div class="card">
+    <h2>MQTT Broker</h2>
+    <div class="desc" id="connectionStatus">وضعیت اتصال در حال بارگذاری است…</div>
+    <label for="mqttHost">Broker host</label>
+    <input id="mqttHost" maxlength="95" autocomplete="off" placeholder="mqtt.example.com">
+    <label for="mqttPort">Port</label>
+    <input id="mqttPort" type="number" min="1" max="65535" value="1883">
+    <label for="mqttUsername">Username</label>
+    <input id="mqttUsername" maxlength="64" autocomplete="username">
+    <label for="mqttPassword">Password</label>
+    <input id="mqttPassword" type="password" maxlength="96" autocomplete="new-password">
+    <div class="hint">رمز خالی، رمز ذخیره‌شده را حفظ می‌کند. Broker host را برای غیرفعال‌کردن MQTT خالی کنید.</div>
+    <label class="check"><input id="mqttTls" type="checkbox"> استفاده از TLS (پورت معمولاً 8883)</label>
+    <label for="mqttCaCert">CA certificate (PEM، الزامی برای TLS)</label>
+    <textarea id="mqttCaCert" maxlength="2048" autocomplete="off" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
+    <div class="hint">برای حفظ گواهی ذخیره‌شده، این فیلد را خالی بگذارید. گواهی TLS بررسی می‌شود؛ اعتبارسنجی ناامن/بدون CA انجام نمی‌شود.</div>
+    <button id="saveBtn">ذخیره و راه‌اندازی مجدد</button>
+    <div class="msg" id="msg"></div>
+  </div>
+  <a href="/wifi">بازگشت به تنظیمات شبکه هاب</a>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const msg = $('msg'), saveBtn = $('saveBtn');
+function show(text, error) {
+  msg.textContent = text;
+  msg.className = 'msg show ' + (error ? 'err' : 'ok');
+}
+fetch('/api/network-config').then(async r => {
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}).then(d => {
+  $('uplinkSsid').value = d.uplinkSsid;
+  $('mqttHost').value = d.mqttHost;
+  $('mqttPort').value = d.mqttPort || 1883;
+  $('mqttUsername').value = d.mqttUsername;
+  $('mqttTls').checked = d.mqttTls;
+  $('connectionStatus').textContent =
+    'Wi-Fi: ' + (d.wifiConnected ? 'متصل' : 'قطع') +
+    ' | MQTT: ' + (d.mqttConnected ? 'متصل' : 'قطع');
+}).catch(e => show(e.message || 'خطا در دریافت تنظیمات', true));
+saveBtn.addEventListener('click', async () => {
+  const body = new URLSearchParams({
+    uplinkSsid: $('uplinkSsid').value,
+    uplinkPassword: $('uplinkPassword').value,
+    mqttHost: $('mqttHost').value.trim(),
+    mqttPort: $('mqttPort').value,
+    mqttUsername: $('mqttUsername').value,
+    mqttPassword: $('mqttPassword').value,
+    mqttTls: $('mqttTls').checked ? '1' : '0',
+    mqttCaCert: $('mqttCaCert').value
+  });
+  saveBtn.disabled = true;
+  try {
+    const r = await fetch('/api/network-config', {
+      method: 'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded'},
+      body
+    });
+    const text = await r.text();
+    if (!r.ok) throw new Error(text);
+    show(text, false);
+  } catch (e) {
+    show(e.message || 'خطا در ذخیره تنظیمات', true);
+    saveBtn.disabled = false;
+  }
 });
 </script>
 </body>
